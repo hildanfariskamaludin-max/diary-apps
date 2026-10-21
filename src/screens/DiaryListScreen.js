@@ -1,26 +1,27 @@
 // src/screens/DiaryListScreen.js
-// Halaman daftar entri Buku Harian (Pertemuan 2 - Komponen Dasar).
-// Menampilkan entri dengan View, Text, Image, ScrollView, StyleSheet, dan
-// layout Flexbox. Kartu diary dipisah menjadi komponen reusable
-// (../components/DiaryCard) dan data dikirim melalui props.
-
-import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  useWindowDimensions,
+} from 'react-native';
 import DiaryCard from '../components/DiaryCard';
+import DiaryDetailModal from '../components/DiaryDetailModal';
+import { COLORS, SPACE, TYPO, BREAKPOINTS } from '../styles/tokens';
 
-// Foto profil pengguna pada header.
-const avatar = require('../../assets/moods/avatar.jpg');
-
-const diaryEntries = [
+const DATA = [
   {
     id: 1,
     title: 'Pagi yang Tenang',
     date: '2025-10-06',
     preview:
       'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit. Udara terasa sejuk...',
-    mood: 'happy',
-    // Gambar lokal (menggantikan URL remote) - lihat folder assets/moods.
+    body: 'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit mengitari kompleks. Udara pagi terasa sejuk dan masih sedikit berkabut. Aku menyeduh teh hangat dan memulai hari dengan hal-hal kecil.',
+    moodUri: 'https://picsum.photos/seed/happy/200',
     moodImage: require('../../assets/moods/pagi.jpg'),
+    heroUri: 'https://picsum.photos/seed/happyhero/800/450',
   },
   {
     id: 2,
@@ -28,9 +29,9 @@ const diaryEntries = [
     date: '2025-10-05',
     preview:
       'Menyelesaikan modul praktikum dan berdiskusi dengan tim. Banyak insight baru...',
-    mood: 'focus',
-    // Gambar remote dari internet.
-    moodUri: 'https://picsum.photos/seed/focus/80',
+    body: 'Menyelesaikan modul praktikum pada mata kuliah Mobile Programming. Berdiskusi dengan tim kelompok mengenai pembagian tugas dan konfigurasi proyek. Banyak insight baru untuk dicatat.',
+    moodUri: 'https://picsum.photos/seed/focus/200',
+    heroUri: 'https://picsum.photos/seed/focushero/800/450',
   },
   {
     id: 3,
@@ -38,9 +39,9 @@ const diaryEntries = [
     date: '2025-10-04',
     preview:
       'Menikmati senja sambil membaca buku favorit. Warna langit sangat indah...',
-    mood: 'calm',
-    // Gambar remote dari internet.
-    moodUri: 'https://picsum.photos/seed/calm/80',
+    body: 'Menikmati senja di taman dekat kampus sambil membaca buku favorit. Langit berubah warna dari jingga ke ungu. Udara mulai mendingin.',
+    moodUri: 'https://picsum.photos/seed/calm/200',
+    heroUri: 'https://picsum.photos/seed/calmhero/800/450',
   },
   {
     id: 4,
@@ -48,8 +49,10 @@ const diaryEntries = [
     date: '2025-10-03',
     preview:
       'Sarapan sederhana di teras rumah ditemani secangkung kopi hangat dan koran pagi.',
-    mood: 'hangout',
+    body: 'Sarapan sederhana di teras rumah: nasi goreng, telur mata sapi, dan secangkung kopi hitam. Membaca koran pagi sambil duduk di kursi lipat. Tidak ada agenda berat, terasa seperti hari libur.',
+    moodUri: 'https://picsum.photos/seed/hangout/200',
     moodImage: require('../../assets/moods/terasrumah.jpg'),
+    heroUri: 'https://picsum.photos/seed/hangouthero/800/450',
   },
   {
     id: 5,
@@ -57,80 +60,72 @@ const diaryEntries = [
     date: '2025-10-02',
     preview:
       'Sore ini aku menikmati suasana dari atap rumah sambil merekam langit yang mulai jingga.',
-    mood: 'evening',
+    body: 'Naik ke atap rumah untuk merekam langit yang mulai jingga. Angin sore lebih sejuk dibanding siang hari. Suara motor di bawah terdengar samar. Bertahan sampai langit berubah menjadi gelap.',
+    moodUri: 'https://picsum.photos/seed/evening/200',
     moodImage: require('../../assets/moods/sore.jpg'),
+    heroUri: 'https://picsum.photos/seed/eveninghero/800/450',
   },
 ];
 
 export default function DiaryListScreen() {
+  const { width } = useWindowDimensions();
+  const twoCols = width >= BREAKPOINTS.tablet;
+  const [selected, setSelected] = useState(null);
+
+  const keyForCols = useMemo(() => (twoCols ? 'grid2' : 'list1'), [twoCols]);
+
+  const renderItem = ({ item }) => (
+    <View style={[styles.itemWrap, twoCols && styles.itemWrap2]}>
+      <DiaryCard
+        title={item.title}
+        date={item.date}
+        preview={item.preview}
+        moodUri={item.moodUri}
+        moodImage={item.moodImage}
+        variant={twoCols ? 'grid' : 'list'}
+        onPress={() => setSelected(item)}
+      />
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Image source={avatar} style={styles.avatar} />
+    <View style={styles.container}>
+      <Text style={styles.header}>Buku Harian</Text>
 
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Buku Harian</Text>
-          <Text style={styles.headerSubtitle}>
-            Hldan Faris Kamaludin - 2430511059
-          </Text>
-        </View>
-      </View>
+      <FlatList
+        key={keyForCols}
+        data={DATA}
+        numColumns={twoCols ? 2 : 1}
+        keyExtractor={(it) => String(it.id)}
+        renderItem={renderItem}
+        columnWrapperStyle={twoCols ? { gap: SPACE.m } : undefined}
+        contentContainerStyle={{
+          padding: SPACE.l,
+          gap: SPACE.m,
+          paddingTop: SPACE.m,
+        }}
+        ListEmptyComponent={<Text style={styles.empty}>Belum ada entri.</Text>}
+      />
 
-      <Text style={styles.meta}>{diaryEntries.length} entri tersimpan</Text>
-
-      {diaryEntries.map((entry) => (
-        <DiaryCard
-          key={entry.id}
-          title={entry.title}
-          date={entry.date}
-          preview={entry.preview}
-          mood={entry.mood}
-          moodImage={entry.moodImage}
-          moodUri={entry.moodUri}
-        />
-      ))}
-    </ScrollView>
+      <DiaryDetailModal
+        visible={!!selected}
+        entry={selected}
+        onClose={() => setSelected(null)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  content: {
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: COLORS.surface },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 4,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#eef2ff',
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
+    fontSize: TYPO.h1,
     fontWeight: '700',
-    color: '#111827',
+    paddingHorizontal: SPACE.l,
+    paddingTop: SPACE.l,
+    color: COLORS.text,
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  meta: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
+  itemWrap: { flex: 1 },
+  itemWrap2: { flex: 1 / 2 },
+  empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
 });
