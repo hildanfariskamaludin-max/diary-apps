@@ -87,8 +87,21 @@ npx expo lint
 | `expo-status-bar` | Pengaturan status bar aplikasi |
 | `react-native` | Framework UI lintas platform |
 | `react-native-safe-area-context` | Menangani area aman (notch/status bar) |
+| `react-native-web` | Adapter React Native agar bisa dirender di browser |
+| `react-dom` | Renderer DOM untuk target web |
+| `@expo/metro-runtime` | Runtime Metro untuk web (hot reload) |
 
 ## Screenshot
+
+### Tampilan Utama
+
+![SS-praktikum2](screenshots/SS-praktikum2.png)
+
+Halaman daftar entri Buku Harian beserta header profil pengguna dan kartu-kartu diary
+bervariasi sesuai mood. Diambil dari render web (`http://localhost:8081`) pada
+layar 400 x 852.
+
+### Dokumentasi Lainnya
 
 Terdapat pada folder `screenshots/`:
 
@@ -97,6 +110,6 @@ Terdapat pada folder `screenshots/`:
   dan badge mood pada tiap kartu.
 - `03-tampilan-lebar.png` — tampilan pada layar lebar (768 x 1000).
 
-> Catatan: file screenshot di atas dihasilkan dari render web atas komponen React Native
-> yang sama (react-native-web). Untuk pengumpulan, silakan ambil ulang screenshot langsung
-> dari aplikasi yang berjalan di Expo Go / emulator.
+> Catatan: seluruh file screenshot di atas dihasilkan dari render web atas komponen
+> React Native yang sama (react-native-web). Untuk pengumpulan, silakan ambil ulang
+> screenshot langsung dari aplikasi yang berjalan di Expo Go / emulator.
