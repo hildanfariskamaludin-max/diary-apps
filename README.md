@@ -13,7 +13,7 @@ Repository ini digunakan untuk mengumpulkan dan mendokumentasikan perkembangan p
 | Pertemuan | Materi | Repository |
 |---|---|---|
 | Pertemuan 2 | Desain UI dan Pengembangan Aplikasi | [Lihat Praktikum](https://github.com/hildanfariskamaludin-max/diary-apps/tree/praktikum-2) |
-| Pertemuan 3 | Pengembangan Fitur Diary App | [Lihat Praktikum](#pertemuan-3) |
+| Pertemuan 3 | Pengembangan Fitur Diary App | [Lihat Praktikum](https://github.com/hildanfariskamaludin-max/diary-apps/tree/praktikum-3) |
 | Pertemuan 4 | Props dan State pada React Native | [Lihat Praktikum](#pertemuan-4) |
 
 ## Keterangan
