@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
 import { COLORS, SPACE, RADIUS, TYPO, getMoodTheme } from '../styles/tokens';
 
+
 export default function DiaryCard({
   title,
   date,
@@ -9,7 +10,9 @@ export default function DiaryCard({
   moodUri,
   moodImage,
   mood = 'default',
-  onPress,
+  liked = false,
+  onPress = () => {},
+  onToggleLike = () => {},
   variant = 'list',
 }) {
   const theme = getMoodTheme(mood);
@@ -36,7 +39,8 @@ export default function DiaryCard({
           source={source}
           style={variant === 'grid' ? styles.moodGrid : styles.mood}
         />
-        <View style={styles.content}>
+
+        <View style={variant === 'grid' ? styles.contentGrid : styles.content}>
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={1}>
               {title}
@@ -54,6 +58,29 @@ export default function DiaryCard({
             {preview}
           </Text>
         </View>
+
+        {/*
+          Callback prop: child tidak mengubah state liked secara langsung,
+          dia meminta parent (DiaryListScreen) untuktoggle lewat onToggleLike.
+        */}
+        <Pressable
+          onPress={onToggleLike}
+          hitSlop={8}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={liked ? 'Batal suka' : 'Suka entri ini'}
+          accessibilityState={{ selected: liked }}
+          style={({ pressed }) => [
+            styles.likeButton,
+            variant === 'grid' && styles.likeButtonGrid,
+            pressed && styles.likePressed,
+          ]}
+        >
+          <Text style={[styles.like, liked && styles.likeActive]}>
+            {liked ? '♥' : '♡'}
+          </Text>
+          <Text style={styles.likeLabel}>{liked ? 'Disukai' : 'Suka'}</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -68,9 +95,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.card,
     backgroundColor: COLORS.surface,
+    alignItems: 'center',
   },
-  // Grid (2 kolom): gambar di atas selebar kartu, teks di bawahnya.
-  cardGrid: { flexDirection: 'column' },
+
+  cardGrid: { flexDirection: 'column', alignItems: 'stretch' },
   mood: {
     width: 64,
     height: 64,
@@ -84,6 +112,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.moodPlaceholder,
   },
   content: { flex: 1 },
+
+  contentGrid: { width: '100%' },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -98,4 +128,23 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 10, fontWeight: '700' },
   date: { fontSize: TYPO.caption, color: COLORS.muted, marginBottom: 6 },
   preview: { fontSize: TYPO.body, color: COLORS.text },
+
+  likeButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACE.s,
+    borderRadius: RADIUS.badge,
+  },
+  likePressed: { opacity: 0.6 },
+  likeButtonGrid: { alignSelf: 'flex-start' },
+  like: { fontSize: 22, lineHeight: 26, color: COLORS.muted },
+  likeActive: { color: COLORS.like },
+  likeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.mutedStrong,
+    marginTop: 2,
+  },
 });

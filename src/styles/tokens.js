@@ -3,7 +3,11 @@ export const COLORS = {
   border: '#E5E7EB',
   text: '#111827',
   muted: '#6B7280',
+  
+  mutedStrong: '#4B5563',
   accent: '#2563EB',
+  
+  like: '#BE123C',
   heroPlaceholder: '#DDDDDD',
   moodPlaceholder: '#EEF2FF',
 };

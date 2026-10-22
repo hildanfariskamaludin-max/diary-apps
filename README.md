@@ -1,9 +1,11 @@
-# Diary App - Praktikum 3 Mobile Programming
+# Diary App - Praktikum 4 Mobile Programming
 
 Aplikasi Buku Harian (Diary App) berbasis **React Native + Expo CLI**.
-Project ini merupakan **lanjutan** dari Diary App Pertemuan 2 (yang masih memakai
-`ScrollView` dengan kartu statis). Pada Pertemuan 3 aplikasi dikembangkan menjadi
-antarmuka yang **terstruktur, responsif, dan interaktif**.
+
+Project ini **lanjutan** dari Pertemuan 3. Kalau Pertemuan 3 membahas desain UI,
+layout responsif, dan modal detail, Pertemuan 4 membahas **Props dan State**:
+data dikirim dari parent ke child lewat props, dan data yang berubah disimpan
+di state memakai `useState`.
 
 ## Data Mahasiswa
 
@@ -14,135 +16,166 @@ antarmuka yang **terstruktur, responsif, dan interaktif**.
 | Mata Kuliah | Mobile Programming (Multiplatform) |
 | Program Studi | Teknik Informatika, Fakultas Sains dan Teknologi, Universitas Muhammadiyah Sukabumi |
 
-## Ringkasan Perubahan dari Pertemuan 2
+## Ringkasan Perubahan dari Pertemuan 3
 
-| Aspek | Pertemuan 2 | Pertemuan 3 |
+| Aspek | Pertemuan 3 | Pertemuan 4 |
 |---|---|---|
-| Daftar entri | `ScrollView` | `FlatList` |
-| Jumlah kolom | Selalu 1 kolom | 1 kolom, otomatis 2 kolom jika lebar `>= 600 px` |
-| Style | Angka & warna ditulis langsung di komponen | Design tokens terpusat di `tokens.js` |
-| Kartu | `View` statis | `Pressable` (bisa ditekan) |
-| Interaksi | Tidak ada | Modal detail saat kartu ditekan |
-| Aksesibilitas | Belum | `accessibilityLabel`, `accessibilityRole`, kontras, target sentuh |
-| Data | 5 entri | 7 entri |
+| Sumber data | Array konstanta di dalam file | `state` `entries` di `DiaryListScreen` |
+| Pencarian | Belum ada | `SearchBar` + `query` + derived `filtered` |
+| Status suka | Belum ada | `likedIds` (`Set`) + callback `onToggleLike` |
+| Tambah entri | Belum ada | `EntryForm` terkontrol + callback `onSubmit` |
+| Peran `DiaryCard` | Presentational + mood theme | Presentational murni (data & callback dari props) |
+| Gambar entri | Lokal + remote | Lokal saja (`assets/moods/`) |
+| Layout responsif | 1–2 kolom @600 px | Dipertahankan |
 
 ---
 
-## Fitur yang Ditambahkan di Praktikum 3
+## Fitur yang Ditambahkan di Praktikum 4
 
-### 1. Design Tokens (`src/styles/tokens.js`)
+### 1. `DiaryCard` Menerima Props (`src/components/DiaryCard.js`)
 
-Seluruh nilai desain dipusatkan dalam satu file sehingga tampilan konsisten dan
-mudah diubah:
+`DiaryCard` sekarang menjadi **presentational component**: ia hanya menampilkan
+data dan meneruskan aksi ke parent. Tidak ada `useState` di dalam komponen ini.
 
-| Token | Isi |
-|---|---|
-| `COLORS` | `surface`, `border`, `text`, `muted`, `accent`, `heroPlaceholder`, `moodPlaceholder` |
-| `SPACE` | `xs: 4`, `s: 8`, `m: 12`, `l: 16`, `xl: 24` |
-| `RADIUS` | `card: 12`, `avatar: 32`, `badge: 10` |
-| `TYPO` | `h1: 24`, `title: 16`, `body: 14`, `caption: 12` |
-| `BREAKPOINTS` | `tablet: 600` (px) |
-| `MOOD_THEME` | `label`, `border`, `background`, `badge`, `badgeText` per mood |
+| Props | Jenis | Fungsi |
+|---|---|---|
+| `title`, `date`, `preview` | data | Menampilkan informasi entri |
+| `mood`, `moodImage`, `moodUri` | data | Tema mood + sumber gambar |
+| `liked` | data (boolean) | Menentukan ikon hati terisi atau kosong |
+| `onPress` | callback | Membuka modal detail |
+| `onToggleLike` | callback | Meminta parent mengubah status like |
 
-Tidak ada lagi warna atau ukuran yang di-hardcode di dalam komponen. Tema mood
-dari Pertemuan 2 juga ikut dipindahkan ke sini (`getMoodTheme()`), sehingga file
-lama `src/styles/moods.js` tidak diperlukan lagi.
+Status like **tidak** disimpan di `DiaryCard`. Kartu hanya menampilkan `liked`
+dan memanggil `onToggleLike()`; orang tua yang memutuskan apakah statusnya
+berubah.
 
-### 2. Daftar Responsif dengan `FlatList`
-
-`ScrollView` diganti `FlatList` agar daftar panjang tetap efisien (hanya item yang
-terlihat yang dirender). Jumlah kolom mengikuti lebar layar:
+### 2. `SearchBar` - Local State + Callback (`src/components/SearchBar.js`)
 
 ```js
-const { width } = useWindowDimensions();
-const twoCols = width >= BREAKPOINTS.tablet;
+const [queryText, setQueryText] = useState('');
+
+const handleChange = (text) => {
+  setQueryText(text);   // local state
+  onChange?.(text);     // callback prop -> parent
+};
 ```
 
-- **`numColumns`** diatur `twoCols ? 2 : 1`.
-- **`key={keyForCols}`** membuat FlatList dipasang ulang saat jumlah kolom berubah
-  (React Native tidak mengizinkan `numColumns` diubah on-the-fly).
-- **`columnWrapperStyle`** hanya diberikan saat 2 kolom, untuk memberi jarak
-  antarkolom.
-- **Header** (avatar, nama, jumlah entri) dirender lewat `ListHeaderComponent`,
-  jadi ikut ter-scroll bersama daftar.
-- **`ListEmptyComponent`** disiapkan untuk keadaan data kosong.
+`queryText` adalah **local state** milik `SearchBar` karena hanya komponen ini
+yang perlu mengetahui isi input. Setiap ketikan langsung diteruskan ke parent
+lewat `onChange` supaya `query` di `DiaryListScreen` ikut berubah.
 
-### 3. `DiaryCard` Interaktif (`src/components/DiaryCard.js`)
+### 3. `EntryForm` - Controlled Form (`src/components/EntryForm.js`)
 
-Kartu dibungkus `Pressable` sehingga seluruh area kartu dapat ditekan:
+Setiap input dibaca dari state dan perubahan user disimpan lewat setter
+(*controlled*), bukan `defaultValue`:
 
-- `onPress` membuka modal detail entri terpilih.
-- `android_ripple` memberi umpan balik sentuhan di Android.
-- `({ pressed }) => opacity` memberi umpan balik visual di semua platform.
-- Properti **`variant`** membedakan tampilan:
-  - `list` - gambar mood di kiri, teks di kanan (1 kolom).
-  - `grid` - gambar mood di atas, teks di bawah (2 kolom).
-- Tetap mendukung **gambar lokal** (`moodImage` hasil `require`) maupun
-  **gambar remote** (`moodUri`), serta **badge mood** dari Pertemuan 2.
+```js
+const [title, setTitle] = useState('');
+const [date, setDate] = useState('2026-10-19');
+const [preview, setPreview] = useState('');
+```
 
-### 4. `DiaryDetailModal` (`src/components/DiaryDetailModal.js`)
+Tombol **Simpan** hanya aktif kalau judul dan ringkasan tidak kosong
+(`canSubmit`). Saat ditekan, data dikirim ke parent melalui `onSubmit`, lalu
+state form dikosongkan kembali supaya form siap dipakai untuk entri berikutnya.
 
-Modal baru yang tampil di atas layar tanpa berpindah screen:
+### 4. `DiaryListScreen` sebagai Container (`src/screens/DiaryListScreen.js`)
 
-- **Hero image** dengan `aspectRatio: 16 / 9` agar tingginya selalu proporsional
-  di berbagai ukuran layar.
-- Judul, **badge mood**, tanggal, dan **isi lengkap** entri (`body`).
-- Tombol **Tutup** (`minHeight: 44`) untuk menutup modal.
-- `onRequestClose` supaya tombol back Android juga menutup modal.
-- Isi dibungkus `ScrollView` agar teks panjang tidak terpotong.
+`DiaryListScreen` menjadi **single source of truth** dan mengelola empat state
+utama:
 
-### 5. Aksesibilitas Dasar
+| State | Peran |
+|---|---|
+| `entries` | Menyimpan seluruh data diary |
+| `query` | Menyimpan kata kunci pencarian dari `SearchBar` |
+| `likedIds` | Menyimpan `Set` id entri yang disukai |
+| `selected` | Menyimpan entri yang sedang dibuka di modal |
 
-- **`accessibilityLabel`** pada setiap kartu
-  (`Entri <judul> tanggal <tanggal>, mood <mood>`) dan pada tombol Tutup
-  (`Tutup detail entri`), plus `accessibilityRole="button"`.
-- **Kontras teks** - teks utama `#111827` di atas `#FFFFFF` (16.1:1) dan teks
-  sekunder `#6B7280` di atas `#FFFFFF` (4.9:1). Setiap mood punya token
-  `badge`/`badgeText` sendiri dengan kontras minimal **4.5:1** (WCAG AA). Contoh:
-  mood `Senang` memakai badge `#B45309` (bukan warna border `#F59E0B` yang hanya
-  mencapai 2.1:1 bila teksnya putih).
-- **Target sentuh** - tombol Tutup diberi `minHeight: 44` (standar Apple HIG /
-  WCAG 2.5.5), dan seluruh area kartu dapat ditekan, bukan hanya ikon atau judul.
+**Derived state** dihitung, bukan disimpan:
 
-### 6. Dua Entri Diary Baru
+```js
+const filtered = useMemo(() => {
+  if (!query.trim()) return entries;
+  const q = query.trim().toLowerCase();
+  return entries.filter((entry) =>
+    entry.title.toLowerCase().includes(q) ||
+    entry.preview.toLowerCase().includes(q) ||
+    entry.date.toLowerCase().includes(q)
+  );
+}, [entries, query]);
+```
 
-Data bertambah dari 5 menjadi **7 entri**, sehingga pengujian daftar 1 kolom,
-grid 2 kolom, dan modal jadi lebih mudah:
+`filtered` bergantung pada `entries` dan `query`, jadi tidak perlu state
+tambahan. Karena `entries` dan `query` berubah, `filtered` dihitung ulang dan
+UI langsung menyesuaikan tanpa me-restart aplikasi.
 
-| id | Judul | Tanggal | Mood | Gambar |
-|---|---|---|---|---|
-| 1 | Pagi yang Tenang | 2025-10-06 | Senang | lokal `pagi.jpg` |
-| 2 | Produktif di Kampus | 2025-10-05 | Fokus | remote |
-| 3 | Senja di Taman | 2025-10-04 | Tenang | remote |
-| 4 | Sarapan di Teras Rumah | 2025-10-03 | Santai | lokal `terasrumah.jpg` |
-| 5 | Sore di Atas Atap | 2025-10-02 | Senja | lokal `sore.jpg` |
-| **6** | **Hujan Sore di Kosan** | 2025-10-01 | Tenang | remote |
-| **7** | **Kumpul Kelompok Malam** | 2025-09-30 | Santai | remote |
+### 5. `likedIds` dengan Set Baru (immutability)
 
-### 7. Integrasi `App.js`
+`Set` tidak boleh dimutasi langsung karena React membandingkan referensi.
+Setiap toggle membuat `Set` baru:
 
-`DiaryListScreen` dibungkus `SafeAreaProvider` + `SafeAreaView` dari
-`react-native-safe-area-context`, dan ditambahkan `StatusBar` (`expo-status-bar`).
+```js
+const toggleLike = (id) => {
+  setLikedIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+};
+```
+
+### 6. Gambar Lokal
+
+Semua entri memakai gambar dari `assets/moods/` (`happy.jpeg`, `focus.jpeg`,
+`calm.jpeg`, `default.jpeg`, `sore.jpg`, `terasrumah.jpg`), jadi aplikasi tetap
+berjalan tanpa koneksi internet. Entri baru dari `EntryForm` memakai
+`default.jpeg`.
+
+### 7. Fitur dari Pertemuan 3 yang Dipertahankan
+
+- Design tokens terpusat di `src/styles/tokens.js`.
+- Tema mood per entri (warna border, latar kartu, badge).
+- Layout responsif `FlatList`: 1 kolom di ponsel, 2 kolom saat lebar `>= 600 px`.
+- `DiaryDetailModal` dengan hero image 16/9 dan tombol Tutup.
+- Aksesibilitas: `accessibilityLabel`, `accessibilityRole`, kontras teks
+  minimal 4.5:1, target sentuh minimal 44 px.
 
 ---
 
-## Penyelesaian Tugas Praktikum
+## Penjelasan Props dan State
 
-| # | Ketentuan Tugas | Status | Dikerjakan di |
-|---|---|---|---|
-| 1 | Terapkan design tokens dan StyleSheet konsisten pada seluruh komponen | Selesai | `src/styles/tokens.js`, dipakai di `DiaryCard`, `DiaryDetailModal`, `DiaryListScreen` |
-| 2 | FlatList responsif: 1 kolom di ponsel, 2 kolom saat `width >= 600 px` | Selesai | `src/screens/DiaryListScreen.js` (`numColumns`, `useWindowDimensions`, `keyForCols`) |
-| 3 | Tambahkan `DiaryDetailModal` dan buka saat `DiaryCard` ditekan | Selesai | `src/components/DiaryDetailModal.js` + `onPress` di `DiaryCard` |
-| 4 | Aksesibilitas: `accessibilityLabel`, kontras teks, target sentuh layak | Selesai | `accessibilityLabel`/`accessibilityRole` di kartu & tombol, token `badge`/`badgeText`, `minHeight: 44` |
-| 5 | Tambahkan minimal dua entri diary baru | Selesai | Entri id 6 & 7 di `DiaryListScreen.js` (total 7 entri) |
-| 6 | Sertakan dua screenshot: 1 kolom dan 2 kolom | Selesai | `screenshots/p3-1kolom.png`, `screenshots/p3-2kolom.png` |
-| 7 | Penjelasan singkat cara kerja breakpoint 600 px | Selesai | Bagian [Cara Kerja Breakpoint 600 px](#cara-kerja-breakpoint-600-px) |
+**Props** adalah data yang dikirim parent ke child. Child memperlakukannya
+sebagai input yang **hanya dibaca** - child tidak boleh mengubahnya langsung.
+Pada Diary App, `DiaryCard` menerima `title`, `date`, `preview`, `liked`, dan
+juga fungsi callback.
 
-### Berkas Pengumpulan
+**State** adalah data milik sebuah komponen yang bisa berubah. Perubahan state
+dipicu lewat setter dari `useState` dan membuat React melakukan re-render.
 
-- Source code project (tanpa folder `node_modules` saat dikompres).
-- Screenshot tampilan 1 kolom dan 2 kolom (folder `screenshots/`).
-- README ini (nama, NIM, cara menjalankan project, dan fitur yang diselesaikan).
+**Callback props** adalah cara child meminta perubahan pada parent. Alurnya:
+
+```
+Aksi pengguna  ->  child memanggil callback props  ->  parent mengubah state
+                ->  React re-render  ->  props baru dikirim ke child
+```
+
+Contohnya tombol suka:
+
+```
+tombol hati ditekan
+  -> DiaryCard memanggil onToggleLike()
+  -> DiaryListScreen menjalankan toggleLike(id)
+  -> setLikedIds(...) membuat Set baru
+  -> re-render, DiaryCard menerima liked={true}
+  -> ikon hati berubah menjadi terisi
+```
+
+**Local state** dipakai kalau datanya hanya dibutuhkan satu komponen
+(`queryText` di `SearchBar`, input `EntryForm`). **Shared state** diletakkan di
+parent kalau dipakai lebih dari satu child (`entries`, `query`, `likedIds`,
+`selected`). **Derived state** adalah nilai yang dihitung dari state lain
+(`filtered`).
 
 ---
 
@@ -154,20 +187,22 @@ diary-app/
 ├── assets/
 │   ├── moods/                    # aset gambar mood & avatar
 │   │   ├── avatar.jpg            # foto profil pengguna (header)
-│   │   ├── pagi.jpg              # gambar entri "Pagi yang Tenang"
-│   │   ├── sore.jpg              # gambar entri "Sore di Atas Atap"
-│   │   ├── terasrumah.jpg        # gambar entri "Sarapan di Teras Rumah"
-│   │   └── *.png                 # ikon mood cadangan
+│   │   ├── happy.jpeg            # mood "Senang"
+│   │   ├── focus.jpeg            # mood "Fokus"
+│   │   ├── calm.jpeg             # mood "Tenang"
+│   │   ├── default.jpeg          # mood "Netral" (dipakai entri baru)
+│   │   ├── sore.jpg              # mood "Senja"
+│   │   └── terasrumah.jpg        # mood "Santai"
 │   └── ...                       # icon & splash bawaan template
-├── screenshots/
-│   ├── p3-1kolom.png             # tampilan daftar 1 kolom
-│   └── p3-2kolom.png             # tampilan daftar 2 kolom
+├── screenshots/                  # dokumentasi tampilan aplikasi
 ├── src/
 │   ├── components/
-│   │   ├── DiaryCard.js          # kartu diary (reusable + Pressable)
-│   │   └── DiaryDetailModal.js   # modal detail entri
+│   │   ├── DiaryCard.js          # presentational component (props + callback)
+│   │   ├── DiaryDetailModal.js   # modal detail entri
+│   │   ├── SearchBar.js          # local state + callback onChange
+│   │   └── EntryForm.js          # controlled form + callback onSubmit
 │   ├── screens/
-│   │   └── DiaryListScreen.js    # daftar entri (FlatList responsif)
+│   │   └── DiaryListScreen.js    # container: entries, query, likedIds, selected
 │   └── styles/
 │       └── tokens.js             # design tokens + tema mood
 ├── eslint.config.js
@@ -242,7 +277,6 @@ bukan oleh platform atau ukuran perangkat yang di-hardcode.
 
    Perubahan `key` membuat FlatList dipasang ulang dengan struktur kolom baru,
    sehingga tidak ada kartu yang tertinggal atau berantakan saat rotasi.
-
 6. Kartu pada baris terakhir grid memakai `flex: 1 / 2`, jadi bila jumlah entri
    ganjil (7 entri) kartu terakhir tetap selebar satu kolom dan tidak melar
    memenuhi baris.
@@ -250,7 +284,7 @@ bukan oleh platform atau ukuran perangkat yang di-hardcode.
 Angka **600** dipilih karena lebar ponsel umumnya 320-480 px, sedangkan tablet
 dimulai dari 600 px (setara `sw600dp` pada Android). Dengan batas ini ponsel
 selalu mendapat 1 kolom yang nyaman dibaca, sementara layar lebar memanfaatkan
-ruangnya untuk 2 kolom tanpa perlu mendeteksi jenis perangkat.
+ruasnya untuk 2 kolom tanpa perlu mendeteksi jenis perangkat.
 
 ## Screenshot
 
@@ -259,7 +293,7 @@ ruangnya untuk 2 kolom tanpa perlu mendeteksi jenis perangkat.
 ![Tampilan 1 kolom](screenshots/p3-1kolom.png)
 
 Kartu ditampilkan penuh satu baris: gambar mood di kiri, lalu judul + badge mood +
-tanggal + cuplikan isi di kanan.
+tombol suka + tanggal + cuplikan isi di kanan.
 
 ### Tampilan 2 Kolom (lebar layar >= 600 px)
 

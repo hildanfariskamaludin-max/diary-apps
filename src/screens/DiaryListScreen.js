@@ -9,12 +9,21 @@ import {
 } from 'react-native';
 import DiaryCard from '../components/DiaryCard';
 import DiaryDetailModal from '../components/DiaryDetailModal';
+import SearchBar from '../components/SearchBar';
+import EntryForm from '../components/EntryForm';
 import { COLORS, SPACE, RADIUS, TYPO, BREAKPOINTS } from '../styles/tokens';
 
+const IMG = {
+  avatar: require('../../assets/moods/avatar.jpg'),
+  happy: require('../../assets/moods/happy.jpeg'),
+  focus: require('../../assets/moods/focus.jpeg'),
+  calm: require('../../assets/moods/calm.jpeg'),
+  default: require('../../assets/moods/default.jpeg'),
+  sore: require('../../assets/moods/sore.jpg'),
+  terasrumah: require('../../assets/moods/terasrumah.jpg'),
+};
 
-const avatar = require('../../assets/moods/avatar.jpg');
-
-const diaryEntries = [
+const INITIAL_ENTRIES = [
   {
     id: 1,
     title: 'Pagi yang Tenang',
@@ -23,9 +32,7 @@ const diaryEntries = [
       'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit. Udara terasa sejuk...',
     body: 'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit mengitari kompleks. Udara pagi terasa sejuk dan masih sedikit berkabut. Aku menyeduh teh hangat dan memulai hari dengan hal-hal kecil.',
     mood: 'happy',
-
-    moodImage: require('../../assets/moods/pagi.jpg'),
-    heroUri: 'https://picsum.photos/seed/happyhero/800/450',
+    moodImage: IMG.happy,
   },
   {
     id: 2,
@@ -35,9 +42,7 @@ const diaryEntries = [
       'Menyelesaikan modul praktikum dan berdiskusi dengan tim. Banyak insight baru...',
     body: 'Menyelesaikan modul praktikum pada mata kuliah Mobile Programming. Berdiskusi dengan tim kelompok mengenai pembagian tugas dan konfigurasi proyek. Banyak insight baru untuk dicatat.',
     mood: 'focus',
-
-    moodUri: 'https://picsum.photos/seed/focus/200',
-    heroUri: 'https://picsum.photos/seed/focushero/800/450',
+    moodImage: IMG.focus,
   },
   {
     id: 3,
@@ -47,64 +52,50 @@ const diaryEntries = [
       'Menikmati senja sambil membaca buku favorit. Warna langit sangat indah...',
     body: 'Menikmati senja di taman dekat kampus sambil membaca buku favorit. Langit berubah warna dari jingga ke ungu. Udara mulai mendingin.',
     mood: 'calm',
-
-    moodUri: 'https://picsum.photos/seed/calm/200',
-    heroUri: 'https://picsum.photos/seed/calmhero/800/450',
-  },
-  {
-    id: 4,
-    title: 'Sarapan di Teras Rumah',
-    date: '2025-10-03',
-    preview:
-      'Sarapan sederhana di teras rumah ditemani secangkung kopi hangat dan koran pagi.',
-    body: 'Sarapan sederhana di teras rumah: nasi goreng, telur mata sapi, dan secangkung kopi hitam. Membaca koran pagi sambil duduk di kursi lipat. Tidak ada agenda berat, terasa seperti hari libur.',
-    mood: 'hangout',
-    moodImage: require('../../assets/moods/terasrumah.jpg'),
-    heroUri: 'https://picsum.photos/seed/hangouthero/800/450',
-  },
-  {
-    id: 5,
-    title: 'Sore di Atas Atap',
-    date: '2025-10-02',
-    preview:
-      'Sore ini aku menikmati suasana dari atap rumah sambil merekam langit yang mulai jingga.',
-    body: 'Naik ke atap rumah untuk merekam langit yang mulai jingga. Angin sore lebih sejuk dibanding siang hari. Suara motor di bawah terdengar samar. Bertahan sampai langit berubah menjadi gelap.',
-    mood: 'evening',
-    moodImage: require('../../assets/moods/sore.jpg'),
-    heroUri: 'https://picsum.photos/seed/eveninghero/800/450',
-  },
-  {
-
-    id: 6,
-    title: 'Hujan Sore di Kosan',
-    date: '2025-10-01',
-    preview:
-      'Hujan turun deras sejak sore. Aku menutup jendela dan menikmati suara air di atap...',
-    body: 'Hujan turun deras sejak pukul empat sore. Aku menutup jendela, menyeduh kopi, dan mendengarkan suara air menghantam atap seng. Tidak ada keinginan untuk keluar, dan itu justru terasa menyenangkan.',
-    mood: 'calm',
-    moodUri: 'https://picsum.photos/seed/rain/200',
-    heroUri: 'https://picsum.photos/seed/rainhero/800/450',
-  },
-  {
-
-    id: 7,
-    title: 'Kumpul Kelompok Malam',
-    date: '2025-09-30',
-    preview:
-      'Rapat kelompok online membahas pembagian tugas praktikum. Diskusi berjalan cair...',
-    body: 'Rapat kelompok online membahas pembagian tugas praktikum berikutnya. Diskusi berjalan cair meski hanya lewat panggilan video. Kami menyepakati pembagian bagian dan jadwal kumpul berikutnya sebelum tengah malam.',
-    mood: 'hangout',
-    moodUri: 'https://picsum.photos/seed/meeting/200',
-    heroUri: 'https://picsum.photos/seed/meetinghero/800/450',
+    moodImage: IMG.calm,
   },
 ];
 
 export default function DiaryListScreen() {
   const { width } = useWindowDimensions();
   const twoCols = width >= BREAKPOINTS.tablet;
-  const [selected, setSelected] = useState(null);
-
   const keyForCols = useMemo(() => (twoCols ? 'grid2' : 'list1'), [twoCols]);
+  const [entries, setEntries] = useState(INITIAL_ENTRIES);
+  const [query, setQuery] = useState('');
+  const [likedIds, setLikedIds] = useState(new Set());
+  const [selected, setSelected] = useState(null);
+  const filtered = useMemo(() => {
+    if (!query.trim()) return entries;
+
+    const q = query.trim().toLowerCase();
+
+    return entries.filter(
+      (entry) =>
+        entry.title.toLowerCase().includes(q) ||
+        entry.preview.toLowerCase().includes(q) ||
+        entry.date.toLowerCase().includes(q)
+    );
+  }, [entries, query]);
+
+
+  const toggleLike = (id) => {
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return next;
+    });
+  };
+
+
+  const addEntry = (newEntry) => {
+    setEntries((prev) => [newEntry, ...prev]);
+  };
 
   const renderItem = ({ item }) => (
     <View style={[styles.itemWrap, twoCols && styles.itemWrap2]}>
@@ -115,8 +106,10 @@ export default function DiaryListScreen() {
         mood={item.mood}
         moodImage={item.moodImage}
         moodUri={item.moodUri}
-        variant={twoCols ? 'grid' : 'list'}
+        liked={likedIds.has(item.id)}
+        onToggleLike={() => toggleLike(item.id)}
         onPress={() => setSelected(item)}
+        variant={twoCols ? 'grid' : 'list'}
       />
     </View>
   );
@@ -124,7 +117,7 @@ export default function DiaryListScreen() {
   const renderHeader = () => (
     <View>
       <View style={styles.header}>
-        <Image source={avatar} style={styles.avatar} />
+        <Image source={IMG.avatar} style={styles.avatar} />
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Buku Harian</Text>
@@ -134,22 +127,37 @@ export default function DiaryListScreen() {
         </View>
       </View>
 
-      <Text style={styles.meta}>{diaryEntries.length} entri tersimpan</Text>
+      <Text style={styles.meta}>
+        {query.trim()
+          ? `Menampilkan ${filtered.length} dari ${entries.length} entri`
+          : `${entries.length} entri tersimpan`}
+        {likedIds.size > 0 ? ` - ${likedIds.size} disukai` : ''}
+      </Text>
+
+      <EntryForm onSubmit={addEntry} />
     </View>
   );
 
   return (
     <View style={styles.container}>
+      <SearchBar onChange={setQuery} />
+
       <FlatList
         key={keyForCols}
-        data={diaryEntries}
+        data={filtered}
         numColumns={twoCols ? 2 : 1}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         columnWrapperStyle={twoCols ? styles.column : undefined}
         contentContainerStyle={styles.content}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={<Text style={styles.empty}>Belum ada entri.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {query.trim()
+              ? 'Tidak ada entri yang cocok dengan pencarian.'
+              : 'Belum ada entri.'}
+          </Text>
+        }
       />
 
       <DiaryDetailModal
@@ -166,6 +174,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACE.l, gap: SPACE.m },
   column: { gap: SPACE.m },
   itemWrap: { flexGrow: 0, flexShrink: 1, flexBasis: 'auto' },
+
   itemWrap2: { flex: 1 / 2 },
   header: {
     flexDirection: 'row',
