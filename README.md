@@ -11,7 +11,7 @@ di state memakai `useState`.
 
 | | |
 |---|---|
-| Nama | Hldan Faris Kamaludin |
+| Nama | Hildan Faris Kamaludin |
 | NIM | 2430511059 |
 | Mata Kuliah | Mobile Programming (Multiplatform) |
 | Program Studi | Teknik Informatika, Fakultas Sains dan Teknologi, Universitas Muhammadiyah Sukabumi |
@@ -76,8 +76,10 @@ const [preview, setPreview] = useState('');
 ```
 
 Tombol **Simpan** hanya aktif kalau judul dan ringkasan tidak kosong
-(`canSubmit`). Saat ditekan, data dikirim ke parent melalui `onSubmit`, lalu
-state form dikosongkan kembali supaya form siap dipakai untuk entri berikutnya.
+(`canSubmit`); selama belum lengkap, form menampilkan petunjuk
+"Isi judul dan ringkasan dulu ya." Saat ditekan, data dikirim ke parent melalui
+`onSubmit`, lalu judul dan ringkasan dikosongkan serta tanggal kembali ke nilai
+default supaya form siap dipakai untuk entri berikutnya.
 
 ### 4. `DiaryListScreen` sebagai Container (`src/screens/DiaryListScreen.js`)
 
@@ -127,10 +129,11 @@ const toggleLike = (id) => {
 
 ### 6. Gambar Lokal
 
-Semua entri memakai gambar dari `assets/moods/` (`happy.jpeg`, `focus.jpeg`,
-`calm.jpeg`, `default.jpeg`, `sore.jpg`, `terasrumah.jpg`), jadi aplikasi tetap
-berjalan tanpa koneksi internet. Entri baru dari `EntryForm` memakai
-`default.jpeg`.
+Semua gambar entri berasal dari folder `assets/moods/`, jadi aplikasi tetap
+berjalan tanpa koneksi internet. Tiga entri awal memakai `happy.jpeg`,
+`focus.jpeg`, dan `calm.jpeg`, sedangkan entri baru dari `EntryForm` memakai
+`default.jpeg`. Aset `sore.jpg`, `terasrumah.jpg`, dan `pagi.jpg` masih tersedia
+di folder tersebut dan bisa dipakai untuk entri berikutnya.
 
 ### 7. Fitur dari Pertemuan 3 yang Dipertahankan
 
@@ -183,16 +186,18 @@ parent kalau dipakai lebih dari satu child (`entries`, `query`, `likedIds`,
 
 ```
 diary-app/
+├── index.js                      # registerRootComponent(App)
 ├── App.js                        # entry point + SafeAreaProvider + StatusBar
 ├── assets/
 │   ├── moods/                    # aset gambar mood & avatar
 │   │   ├── avatar.jpg            # foto profil pengguna (header)
-│   │   ├── happy.jpeg            # mood "Senang"
-│   │   ├── focus.jpeg            # mood "Fokus"
 │   │   ├── calm.jpeg             # mood "Tenang"
 │   │   ├── default.jpeg          # mood "Netral" (dipakai entri baru)
-│   │   ├── sore.jpg              # mood "Senja"
-│   │   └── terasrumah.jpg        # mood "Santai"
+│   │   ├── focus.jpeg            # mood "Fokus"
+│   │   ├── happy.jpeg            # mood "Senang"
+│   │   ├── pagi.jpg              # aset tambahan (belum dipakai entri)
+│   │   ├── sore.jpg              # aset tambahan (belum dipakai entri)
+│   │   └── terasrumah.jpg        # aset tambahan (belum dipakai entri)
 │   └── ...                       # icon & splash bawaan template
 ├── screenshots/                  # dokumentasi tampilan aplikasi
 ├── src/
@@ -278,8 +283,8 @@ bukan oleh platform atau ukuran perangkat yang di-hardcode.
    Perubahan `key` membuat FlatList dipasang ulang dengan struktur kolom baru,
    sehingga tidak ada kartu yang tertinggal atau berantakan saat rotasi.
 6. Kartu pada baris terakhir grid memakai `flex: 1 / 2`, jadi bila jumlah entri
-   ganjil (7 entri) kartu terakhir tetap selebar satu kolom dan tidak melar
-   memenuhi baris.
+   ganjil kartu terakhir tetap selebar satu kolom dan tidak melar memenuhi
+   baris.
 
 Angka **600** dipilih karena lebar ponsel umumnya 320-480 px, sedangkan tablet
 dimulai dari 600 px (setara `sw600dp` pada Android). Dengan batas ini ponsel
@@ -288,19 +293,21 @@ ruasnya untuk 2 kolom tanpa perlu mendeteksi jenis perangkat.
 
 ## Screenshot
 
-### Tampilan 1 Kolom (lebar layar < 600 px)
+### Sebelum Menambah Entri dan Menyukai
 
-![Tampilan 1 kolom](screenshots/p3-1kolom.png)
+![Tampilan sebelum menambah entri](screenshots/Sebelum.png)
 
-Kartu ditampilkan penuh satu baris: gambar mood di kiri, lalu judul + badge mood +
-tombol suka + tanggal + cuplikan isi di kanan.
+Tampilan awal Praktikum 4: kolom pencarian dan form **Tambah Entri** sudah
+tersedia, data masih berisi 3 entri, dan belum ada entri yang disukai.
 
-### Tampilan 2 Kolom (lebar layar >= 600 px)
+### Sesudah Menambah Entri dan Menyukai
 
-![Tampilan 2 kolom](screenshots/p3-2kolom.png)
+![Tampilan sesudah menambah entri](screenshots/Sesudah.png)
 
-Daftar berubah menjadi grid dua kolom dengan gambar mood di atas dan teks di
-bawah. Perubahan terjadi otomatis saat lebar layar mencapai 600 px.
+Setelah judul dan ringkasan diisi lalu tombol **Simpan** ditekan, entri baru
+("lari di taman") muncul paling atas dan jumlah entri di header berubah menjadi
+4. Dua entri yang tombol sukanya ditekan menampilkan ikon hati terisi, dan
+hitungan di header berubah menjadi "2 disukai".
 
 ## Library yang Digunakan
 

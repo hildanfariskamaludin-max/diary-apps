@@ -122,7 +122,7 @@ export default function DiaryListScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Buku Harian</Text>
           <Text style={styles.headerSubtitle}>
-            Hldan Faris Kamaludin - 2430511059
+            Hildan Faris Kamaludin - 2430511059
           </Text>
         </View>
       </View>
